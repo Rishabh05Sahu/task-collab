@@ -16,8 +16,29 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const isValidEmail = (value: string) => {
+    return /^\S+@\S+\.\S+$/.test(value.trim());
+  };
 
   const handleSignup = async () => {
+    setErrorMsg(null);
+
+    // Frontend validation (fast UX)
+    if (name.trim().length < 2) {
+      setErrorMsg("Name must be at least 2 characters.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters.");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -27,14 +48,10 @@ export default function SignupPage() {
         password,
       });
 
-      // store user in global state
       setUser(res.data.user);
-
       router.push("/dashboard");
     } catch (error: any) {
-      alert(
-        error.response?.data?.error || "Signup failed"
-      );
+      setErrorMsg(error.response?.data?.error || "Signup failed");
     } finally {
       setLoading(false);
     }
@@ -42,9 +59,7 @@ export default function SignupPage() {
 
   return (
     <div className="max-w-md mx-auto mt-20 space-y-4">
-      <h1 className="text-2xl font-bold">
-        Create Account
-      </h1>
+      <h1 className="text-2xl font-bold">Create Account</h1>
 
       <Input
         placeholder="Full Name"
@@ -53,21 +68,22 @@ export default function SignupPage() {
       />
 
       <Input
+        type="email"
         placeholder="Email"
         value={email}
-        onChange={(e) =>
-          setEmail(e.target.value)
-        }
+        onChange={(e) => setEmail(e.target.value)}
       />
 
       <Input
         type="password"
         placeholder="Password"
         value={password}
-        onChange={(e) =>
-          setPassword(e.target.value)
-        }
+        onChange={(e) => setPassword(e.target.value)}
       />
+
+      {errorMsg && (
+        <p className="text-sm text-rose-300">{errorMsg}</p>
+      )}
 
       <Button
         onClick={handleSignup}
@@ -81,9 +97,7 @@ export default function SignupPage() {
         Already have an account?{" "}
         <span
           className="text-blue-600 cursor-pointer"
-          onClick={() =>
-            router.push("/login")
-          }
+          onClick={() => router.push("/login")}
         >
           Login
         </span>

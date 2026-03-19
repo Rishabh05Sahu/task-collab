@@ -61,7 +61,7 @@ export function DeleteTaskDialog({ task }: { task: any }) {
             <Button
               variant="outline"
               onClick={() => setOpen(false)}
-              className="border-slate-700 text-slate-100 hover:bg-slate-800"
+              className="border-slate-700 text-black  hover:bg-slate-800"
             >
               Cancel
             </Button>
@@ -69,7 +69,7 @@ export function DeleteTaskDialog({ task }: { task: any }) {
             <Button
               variant="destructive"
               onClick={handleDelete}
-              className="bg-rose-500 hover:bg-rose-400 border border-rose-400"
+              className="bg-rose-500 text-black hover:bg-rose-400 border border-rose-400"
             >
               Confirm Delete
             </Button>

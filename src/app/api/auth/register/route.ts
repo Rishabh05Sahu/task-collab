@@ -3,41 +3,33 @@ import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { registerSchema } from "@/modules/auth/auth.schema";
+import { ZodError } from "zod";
 
 export async function POST(req: Request) {
   try {
     await connectDB();
 
-    const { name, email, password } =
-      await req.json();
+    const body = await req.json();
 
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: "All fields are required" },
-        { status: 400 }
-      );
-    }
+    // Validates email + password (+ name) using Zod
+    const parsed = registerSchema.parse(body);
 
-    const existing = await User.findOne({
-      email,
-    });
+    const { name, email, password } = parsed;
 
+    const existing = await User.findOne({ email });
     if (existing) {
       return NextResponse.json(
         { error: "User already exists" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // 🔥 OPTION 1 — Bootstrap Admin
-    const userCount =
-      await User.countDocuments();
+    // Bootstrap admin on first user
+    const userCount = await User.countDocuments();
+    const role = userCount === 0 ? "admin" : "user";
 
-    const role =
-      userCount === 0 ? "admin" : "user";
-
-    const hashedPassword =
-      await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name,
@@ -52,7 +44,7 @@ export async function POST(req: Request) {
         role: user.role,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     const response = NextResponse.json(
@@ -65,23 +57,28 @@ export async function POST(req: Request) {
           role: user.role,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
 
     response.cookies.set("token", token, {
       httpOnly: true,
-      secure:
-        process.env.NODE_ENV ===
-        "production",
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
     });
 
     return response;
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: error.issues.map((e) => e.message).join(", ") },
+        { status: 400 },
+      );
+    }
+
     return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
+      { error: error?.message || "Signup failed" },
+      { status: 500 },
     );
   }
 }
